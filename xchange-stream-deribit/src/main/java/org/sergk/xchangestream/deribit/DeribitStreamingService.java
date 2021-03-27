@@ -67,7 +67,7 @@ class DeribitStreamingService extends JsonNettyStreamingService {
         String channelName = getChannel(message);
 
         logger.debug(channelName);
-  
+
         super.handleMessage(message);
     }
 }
