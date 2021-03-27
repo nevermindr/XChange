@@ -11,25 +11,28 @@ import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @author sergi-ko
+ */
 class DeribitStreamingTradeService implements StreamingTradeService {
 
-  private static final Logger logger = LoggerFactory.getLogger(DeribitStreamingTradeService.class);
+    private static final Logger logger = LoggerFactory.getLogger(DeribitStreamingTradeService.class);
 
-  private final ObjectMapper mapper = StreamingObjectMapperHelper.getObjectMapper();
+    private final ObjectMapper mapper = StreamingObjectMapperHelper.getObjectMapper();
 
-  private final DeribitStreamingService service;
+    private final DeribitStreamingService service;
 
-  public DeribitStreamingTradeService(DeribitStreamingService service) {
-    throw new NotYetImplementedForExchangeException();
-  }
+    public DeribitStreamingTradeService(DeribitStreamingService service) {
+        throw new NotYetImplementedForExchangeException();
+    }
 
-  @Override
-  public Observable<UserTrade> getUserTrades(CurrencyPair currencyPair, Object... args) {
-    throw new NotYetImplementedForExchangeException();
-  }
+    @Override
+    public Observable<UserTrade> getUserTrades(CurrencyPair currencyPair, Object... args) {
+        throw new NotYetImplementedForExchangeException();
+    }
 
-  @Override
-  public Observable<Order> getOrderChanges(CurrencyPair currencyPair, Object... args) {
-    throw new NotYetImplementedForExchangeException();
-  }
+    @Override
+    public Observable<Order> getOrderChanges(CurrencyPair currencyPair, Object... args) {
+        throw new NotYetImplementedForExchangeException();
+    }
 }

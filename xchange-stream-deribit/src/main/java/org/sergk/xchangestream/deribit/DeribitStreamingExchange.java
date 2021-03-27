@@ -5,59 +5,70 @@ import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingTradeService;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.deribit.v2.DeribitExchange;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 
 public class DeribitStreamingExchange extends DeribitExchange implements StreamingExchange {
 
-  private static final String API_URI = "wss://feed.exchange.coinjar.com/socket/websocket";
+    private static final String API_V2_URI = "wss://www.deribit.com/ws/api/v2";
 
-  private DeribitStreamingService streamingService;
-  private DeribitStreamingMarketDataService streamingMarketDataService;
-  private DeribitStreamingTradeService streamingTradeService;
+    private DeribitStreamingService streamingService;
+    private DeribitStreamingMarketDataService streamingMarketDataService;
+    private DeribitStreamingTradeService streamingTradeService;
 
-  @Override
-  protected void initServices() {
-    throw new NotYetImplementedForExchangeException();
- }
+    @Override
+    protected void initServices() {
+        super.initServices();
+        ExchangeSpecification exchangeSpec = getExchangeSpecification();
+        this.streamingService = new DeribitStreamingService(API_V2_URI);
+        applyStreamingSpecification(exchangeSpec, this.streamingService);
 
-  @Override
-  public Completable connect(ProductSubscription... args) {
-    return streamingService.connect();
-  }
+        this.streamingMarketDataService = new DeribitStreamingMarketDataService(streamingService);
+    }
 
-  @Override
-  public Completable disconnect() {
-    return streamingService.disconnect();
-  }
+    @Override
+    public Completable connect(ProductSubscription... args) {
+        return streamingService.connect();
+    }
 
-  @Override
-  public boolean isAlive() {
-    return streamingService.isSocketOpen();
-  }
+    @Override
+    public Completable disconnect() {
+        return streamingService.disconnect();
+    }
 
-  @Override
-  public Observable<Throwable> reconnectFailure() {
-    return streamingService.subscribeReconnectFailure();
-  }
+    @Override
+    public boolean isAlive() {
+        return streamingService.isSocketOpen();
+    }
 
-  @Override
-  public Observable<Object> connectionSuccess() {
-    return streamingService.subscribeConnectionSuccess();
-  }
+    @Override
+    public Observable<Throwable> reconnectFailure() {
+        return streamingService.subscribeReconnectFailure();
+    }
 
-  @Override
-  public DeribitStreamingMarketDataService getStreamingMarketDataService() {
-    return streamingMarketDataService;
-  }
+    @Override
+    public Observable<Object> connectionSuccess() {
+        return streamingService.subscribeConnectionSuccess();
+    }
 
-  @Override
-  public StreamingTradeService getStreamingTradeService() {
-    return streamingTradeService;
-  }
+    @Override
+    public DeribitStreamingMarketDataService getStreamingMarketDataService() {
+        return streamingMarketDataService;
+    }
 
-  @Override
-  public void useCompressedMessages(boolean compressedMessages) {
-    streamingService.useCompressedMessages(compressedMessages);
-  }
+    @Override
+    public StreamingTradeService getStreamingTradeService() {
+        return streamingTradeService;
+    }
+
+    @Override
+    public void useCompressedMessages(boolean compressedMessages) {
+        streamingService.useCompressedMessages(compressedMessages);
+    }
+
+    @Override
+    public ExchangeSpecification getExchangeSpecification() {
+        return super.getExchangeSpecification();
+    }
 }

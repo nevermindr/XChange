@@ -1,0 +1,33 @@
+@startuml
+'[DeribitStreamingMarketDataService]
+'[DeribitStreamingService]
+autoactivate on
+
+DeribitManualExample -> DeribitStreamingExchange: getStreamingMarketDataService()
+DeribitStreamingExchange -> DeribitManualExample: streamingMarketDataService
+DeribitManualExample -> DeribitStreamingMarketDataService: getOrderBook()
+'activate DeribitStreamingMarketDataService
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService #005500: subscribe()
+'activate DeribitStreamingMarketDataService
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService: subscribeChannel()
+'activate DeribitStreamingMarketDataService
+
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService: getSubscribeMessage()
+return message
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService: sendMessage()
+return
+'return sendMessage(message)
+return newSubscription: Observable
+
+WebSocket  -> DeribitStreamingMarketDataService: message
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService: handleMessage()
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService: handleChannelMessage()
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService: channels.getSubscription(channel).getEmitter().onNext()
+
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService: filter(node)
+return node instanceof ObjectNode
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService: map(node)
+return (ObjectNode) node
+DeribitStreamingMarketDataService -> DeribitStreamingMarketDataService: filter(node)
+return ???
+@enduml
