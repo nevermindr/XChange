@@ -1,4 +1,4 @@
-package org.sergk.xchangestream.deribit.dto;
+package org.sergk.xchangestream.deribit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import info.bitrich.xchangestream.service.netty.StreamingObjectMapperHelper;

@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by sergi-ko on 26.03.21.
  */
-public class DeribitManualExample {
-    private static final Logger LOG = LoggerFactory.getLogger(DeribitManualExample.class);
+public class DeribitAllExample {
+    private static final Logger LOG = LoggerFactory.getLogger(DeribitAllExample.class);
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public static void main(String[] args) {
