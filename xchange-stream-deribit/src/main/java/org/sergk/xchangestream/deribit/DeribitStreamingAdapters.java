@@ -4,13 +4,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Streams;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.instrument.Instrument;
 import org.sergk.xchangestream.deribit.dto.DeribitWholeOrderBookSubscriptionNotificationData;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author sergi-ko
@@ -108,4 +111,32 @@ public class DeribitStreamingAdapters {
         return new BigDecimal(node.get(2).asText()).stripTrailingZeros();
     }
 
+    /**
+     * Adapt an JsonNode into a list of Trade
+     */
+    @SuppressWarnings("UnstableApiUsage")
+    public static List<Trade> adaptTrades(Instrument instrument, JsonNode arrayNode) {
+        JsonNode data = arrayNode.get("params").get("data");
+        return Streams.stream(data.elements())
+                .map(innerNode -> DeribitStreamingAdapters.adaptTrade(instrument, innerNode))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Adapt an JsonNode into a single Trade
+     */
+    public static Trade adaptTrade(Instrument instrument, JsonNode arrayNode) {
+        if (arrayNode == null) {
+            return null;
+        }
+        Iterator<JsonNode> iterator = arrayNode.iterator();
+        return new Trade.Builder()
+                .price(new BigDecimal(arrayNode.get("price").asText()))
+                .originalAmount(new BigDecimal(arrayNode.get("amount").asText()))
+                .timestamp(new Date(arrayNode.get("timestamp").asLong()))
+                .type(arrayNode.get("amount").asText().equals("buy") ? Order.OrderType.BID : Order.OrderType.ASK)
+                .instrument(instrument)
+                .id(arrayNode.get("trade_id").asText())
+                .build();
+    }
 }

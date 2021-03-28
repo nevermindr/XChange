@@ -5,4 +5,5 @@ package org.sergk.xchangestream.deribit.dto;
  */
 public enum DeribitSubscriptionName {
   book,
+  trades
 }

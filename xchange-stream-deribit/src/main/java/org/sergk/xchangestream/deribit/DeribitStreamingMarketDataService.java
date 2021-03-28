@@ -69,7 +69,11 @@ class DeribitStreamingMarketDataService implements StreamingMarketDataService {
 
     @Override
     public Observable<Trade> getTrades(CurrencyPair currencyPair, Object... args) {
-        throw new NotYetImplementedForExchangeException();
+        String channelName = String.format("%s.ETH-PERPETUAL.100ms", DeribitSubscriptionName.trades);
+        return subscribe(channelName)
+                .filter(node -> node.has("method") && node.get("method").asText().equals("subscription"))
+                .filter(node -> node.has("params") && node.get("params").get("channel").asText().equals(channelName))
+                .flatMap(node -> Observable.fromIterable(DeribitStreamingAdapters.adaptTrades(currencyPair, node)));
     }
 
     public Observable<JsonNode> subscribe(String channelName) {

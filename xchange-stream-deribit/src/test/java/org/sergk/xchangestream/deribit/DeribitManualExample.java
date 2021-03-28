@@ -32,5 +32,13 @@ public class DeribitManualExample {
                             LOG.info("First bid: {}", orderBook.getBids().get(0));
                         },
                         throwable -> LOG.error("ERROR in getting order book: ", throwable));
+
+
+        exchange
+                .getStreamingMarketDataService()
+                .getTrades(CurrencyPair.BTC_USD)
+                .subscribe(
+                        trade -> LOG.info("TRADE: {}", trade),
+                        throwable -> LOG.error("ERROR in getting trades: ", throwable));
     }
 }

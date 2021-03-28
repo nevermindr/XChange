@@ -9,7 +9,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.sergk.xchangestream.deribit.DeribitStreamingAdapters;
 
@@ -17,6 +19,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import static info.bitrich.xchangestream.service.netty.StreamingObjectMapperHelper.getObjectMapper;
 
@@ -167,6 +170,38 @@ public class DeribitStreamingAdaptersTest {
 
         Assert.assertEquals(afterInitialLoad.getAsks().size(), 549);
         Assert.assertEquals(afterInitialLoad.getBids().size(), 775);
-
     }
+
+    @Test
+    public void testAdaptTrade() throws IOException {
+        JsonNode jsonNode =
+                StreamingObjectMapperHelper.getObjectMapper()
+                        .readTree(this.getClass().getResource("/subscription-trades.ETH-PERPETUAL.100ms-single-trade.json").openStream());
+
+        Trade trade = DeribitStreamingAdapters.adaptTrade(null, jsonNode);
+
+        Assert.assertEquals(trade.getId(), "ETH-53743624");
+        Assert.assertEquals(trade.getOriginalAmount(), new BigDecimal(1));
+        Assert.assertEquals(trade.getTimestamp(), new Date(Long.parseLong("1616957704958")));
+        Assert.assertEquals(trade.getType(), Order.OrderType.ASK);
+        Assert.assertEquals(trade.getPrice(), new BigDecimal("1675.6"));
+        Assert.assertNull(trade.getInstrument());
+    }
+
+
+    @Test
+    public void testAdaptTrades() throws IOException {
+        JsonNode jsonNode =
+                StreamingObjectMapperHelper.getObjectMapper()
+                        .readTree(this.getClass().getResource("/subscription-trades.ETH-PERPETUAL.100ms.json").openStream());
+
+        List<Trade> trades = DeribitStreamingAdapters.adaptTrades(BTC_USD, jsonNode);
+
+        Assert.assertEquals(trades.size(), 3);
+
+        Assert.assertEquals(trades.get(0).getId(), "ETH-53743624");
+        Assert.assertEquals(trades.get(1).getId(), "ETH-53743625");
+        Assert.assertEquals(trades.get(2).getId(), "ETH-53743626");
+    }
+
 }
