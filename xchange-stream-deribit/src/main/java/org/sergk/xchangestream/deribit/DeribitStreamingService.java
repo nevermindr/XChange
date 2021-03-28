@@ -2,7 +2,6 @@ package org.sergk.xchangestream.deribit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import info.bitrich.xchangestream.service.netty.JsonNettyStreamingService;
-import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.sergk.xchangestream.deribit.dto.DeribitSubscriptionMessage;
 import org.sergk.xchangestream.deribit.dto.DeribitSubscriptionMessageParams;
 import org.slf4j.Logger;
@@ -42,24 +41,31 @@ class DeribitStreamingService extends JsonNettyStreamingService {
         int reqId = 1;
         String subscribeMethod = "public/subscribe";
 
-
         DeribitSubscriptionMessage subscriptionMessage =
                 new DeribitSubscriptionMessage(
                         reqId,
                         subscribeMethod,
                         new DeribitSubscriptionMessageParams(channelName));
 
-//        logger.info("DeribitSubscriptionMessage" + subscriptionMessage);
-
         String msg = objectMapper.writeValueAsString(subscriptionMessage);
         logger.info("msg" + msg);
         return msg;
-//    throw new NotYetImplementedForExchangeException();
     }
 
     @Override
-    public String getUnsubscribeMessage(String channelName) {
-        throw new NotYetImplementedForExchangeException();
+    public String getUnsubscribeMessage(String channelName) throws IOException {
+        int reqId = 2;
+        String subscribeMethod = "public/unsubscribe";
+
+        DeribitSubscriptionMessage unsubscriptionMessage =
+                new DeribitSubscriptionMessage(
+                        reqId,
+                        subscribeMethod,
+                        new DeribitSubscriptionMessageParams(channelName));
+
+        String msg = objectMapper.writeValueAsString(unsubscriptionMessage);
+        logger.info("msg" + msg);
+        return msg;
     }
 
     @Override
