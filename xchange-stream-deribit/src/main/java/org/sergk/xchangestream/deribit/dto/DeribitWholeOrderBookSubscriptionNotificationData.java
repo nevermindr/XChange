@@ -10,13 +10,6 @@ import java.util.List;
  */
 public class DeribitWholeOrderBookSubscriptionNotificationData {
 
-    @JsonProperty
-    private final String method;
-    @JsonProperty("jsonrpc")
-    private final String jsonrpc = "2.0";
-
-    private String channel;
-
     private DeribitWholeOrderBookNotificationDataType type;
     private Long timestamp;
     private final BigDecimal prevChangeId;
@@ -27,7 +20,6 @@ public class DeribitWholeOrderBookSubscriptionNotificationData {
     private List<List<Object>> asks;
 
     public DeribitWholeOrderBookSubscriptionNotificationData(
-            @JsonProperty("method") String method,
             @JsonProperty("type") String type,
             @JsonProperty("timestamp") Long timestamp,
             @JsonProperty("prevChangeId") BigDecimal prevChangeId,
@@ -36,7 +28,6 @@ public class DeribitWholeOrderBookSubscriptionNotificationData {
             @JsonProperty("bids") List<List<Object>> bids,
             @JsonProperty("asks") List<List<Object>> asks
     ) {
-        this.method = method;
         this.type = DeribitWholeOrderBookNotificationDataType.valueOf(type);
         this.timestamp = timestamp;
         this.prevChangeId = prevChangeId;
@@ -44,18 +35,6 @@ public class DeribitWholeOrderBookSubscriptionNotificationData {
         this.changeId = changeId;
         this.bids = bids;
         this.asks = asks;
-    }
-
-    public String getMethod() {
-        return method;
-    }
-
-    public String getJsonrpc() {
-        return jsonrpc;
-    }
-
-    public String getChannel() {
-        return channel;
     }
 
     public DeribitWholeOrderBookNotificationDataType getType() {
