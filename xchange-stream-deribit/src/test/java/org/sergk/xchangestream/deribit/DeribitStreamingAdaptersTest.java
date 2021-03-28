@@ -11,7 +11,6 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.trade.LimitOrder;
-import org.sergk.xchangestream.deribit.DeribitStreamingAdapters;
 
 import java.io.IOException;
 import java.math.BigDecimal;
