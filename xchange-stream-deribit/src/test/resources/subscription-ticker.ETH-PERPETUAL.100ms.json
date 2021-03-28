@@ -1,0 +1,33 @@
+{
+  "jsonrpc": "2.0",
+  "method": "subscription",
+  "params": {
+    "channel": "ticker.ETH-PERPETUAL.100ms",
+    "data": {
+      "timestamp": 1616962111916,
+      "stats": {
+        "volume_usd": 124116154,
+        "volume": 72758.458464,
+        "price_change": -2.0552,
+        "low": 1663.3,
+        "high": 1735.1
+      },
+      "state": "open",
+      "settlement_price": 1719.71,
+      "open_interest": 141057220,
+      "min_price": 1645.11,
+      "max_price": 1695.22,
+      "mark_price": 1670.2,
+      "last_price": 1670.35,
+      "instrument_name": "ETH-PERPETUAL",
+      "index_price": 1667.92,
+      "funding_8h": 0.000333,
+      "estimated_delivery_price": 1667.92,
+      "current_funding": 0.000867,
+      "best_bid_price": 1670.1,
+      "best_bid_amount": 17776,
+      "best_ask_price": 1670.3,
+      "best_ask_amount": 534
+    }
+  }
+}

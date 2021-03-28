@@ -11,6 +11,7 @@ import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.sergk.xchangestream.deribit.DeribitStreamingAdapters;
@@ -36,7 +37,8 @@ public class DeribitStreamingAdaptersTest {
         return getObjectMapper()
                 .getTypeFactory()
                 .constructType(
-                        new TypeReference<DeribitSubscriptionNotification<DeribitWholeOrderBookSubscriptionNotificationData>>() {});
+                        new TypeReference<DeribitSubscriptionNotification<DeribitWholeOrderBookSubscriptionNotificationData>>() {
+                        });
     }
 
     @Test
@@ -188,7 +190,6 @@ public class DeribitStreamingAdaptersTest {
         Assert.assertNull(trade.getInstrument());
     }
 
-
     @Test
     public void testAdaptTrades() throws IOException {
         JsonNode jsonNode =
@@ -202,6 +203,30 @@ public class DeribitStreamingAdaptersTest {
         Assert.assertEquals(trades.get(0).getId(), "ETH-53743624");
         Assert.assertEquals(trades.get(1).getId(), "ETH-53743625");
         Assert.assertEquals(trades.get(2).getId(), "ETH-53743626");
+    }
+
+
+    @Test
+    public void testAdaptTickerMessage() throws IOException {
+        JsonNode jsonNode =
+                StreamingObjectMapperHelper.getObjectMapper()
+                        .readTree(this.getClass().getResource("/subscription-ticker.ETH-PERPETUAL.100ms.json").openStream());
+
+        Ticker ticker = DeribitStreamingAdapters.adaptTickerMessage(BTC_USD, jsonNode);
+
+        Assert.assertEquals(ticker.getInstrument(), BTC_USD);
+        Assert.assertEquals(new BigDecimal(141057220), ticker.getOpen());
+        Assert.assertEquals(new BigDecimal("1670.3"), ticker.getAsk());
+        Assert.assertEquals(new BigDecimal("534"), ticker.getAskSize());
+        Assert.assertEquals(new BigDecimal("1670.1"), ticker.getBid());
+        Assert.assertEquals(new BigDecimal("17776"), ticker.getBidSize());
+        Assert.assertEquals(new BigDecimal("1670.35"), ticker.getLast());
+        Assert.assertEquals(new BigDecimal("1735.1"), ticker.getHigh());
+        Assert.assertEquals(new BigDecimal("1663.3"), ticker.getLow());
+        Assert.assertEquals(new BigDecimal("72758.458464"), ticker.getVolume());
+        Assert.assertEquals(new BigDecimal("124116154"), ticker.getQuoteVolume());
+        Assert.assertEquals(new BigDecimal("-2.0552"), ticker.getPercentageChange());
+        Assert.assertEquals(new Date(Long.parseLong("1616962111916")), ticker.getTimestamp());
     }
 
 }

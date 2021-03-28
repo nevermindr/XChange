@@ -40,5 +40,13 @@ public class DeribitManualExample {
                 .subscribe(
                         trade -> LOG.info("TRADE: {}", trade),
                         throwable -> LOG.error("ERROR in getting trades: ", throwable));
+
+
+        exchange
+                .getStreamingMarketDataService()
+                .getTicker(CurrencyPair.BTC_USD)
+                .subscribe(
+                        ticker -> LOG.info("Ticker: {}", ticker),
+                        throwable -> LOG.error("ERROR in getting trades: ", throwable));
     }
 }

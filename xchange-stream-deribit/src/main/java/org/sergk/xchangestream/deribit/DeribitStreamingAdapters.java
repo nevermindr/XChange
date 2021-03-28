@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Streams;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.instrument.Instrument;
+import org.knowm.xchange.utils.DateUtils;
 import org.sergk.xchangestream.deribit.dto.DeribitWholeOrderBookSubscriptionNotificationData;
 
 import java.math.BigDecimal;
@@ -137,6 +139,30 @@ public class DeribitStreamingAdapters {
                 .type(arrayNode.get("amount").asText().equals("buy") ? Order.OrderType.BID : Order.OrderType.ASK)
                 .instrument(instrument)
                 .id(arrayNode.get("trade_id").asText())
+                .build();
+    }
+
+    /**
+     * Adapt an ArrayNode containing a ticker message into a Ticker
+     */
+    public static Ticker adaptTickerMessage(Instrument instrument, JsonNode arrayNode) {
+        JsonNode tickerNode = arrayNode.get("params").get("data");
+
+        return new Ticker.Builder()
+                .open(new BigDecimal(tickerNode.get("open_interest").asText()))
+                .ask(new BigDecimal(tickerNode.get("best_ask_price").asText()))
+                .askSize(new BigDecimal(tickerNode.get("best_ask_amount").asText()))
+                .bid(new BigDecimal(tickerNode.get("best_bid_price").asText()))
+                .bidSize(new BigDecimal(tickerNode.get("best_bid_amount").asText()))
+                .last(new BigDecimal(tickerNode.get("last_price").asText()))
+                .high(new BigDecimal(tickerNode.get("stats").get("high").asText()))
+                .low(new BigDecimal(tickerNode.get("stats").get("low").asText()))
+//                            .vwap(nextNodeAsDecimal(vwapIterator))
+                .volume(new BigDecimal(tickerNode.get("stats").get("volume").asText()))
+                .quoteVolume(new BigDecimal(tickerNode.get("stats").get("volume_usd").asText()))
+                .percentageChange(new BigDecimal(tickerNode.get("stats").get("price_change").asText()))
+                .timestamp(new Date(tickerNode.get("timestamp").asLong()))
+                .instrument(instrument)
                 .build();
     }
 }
