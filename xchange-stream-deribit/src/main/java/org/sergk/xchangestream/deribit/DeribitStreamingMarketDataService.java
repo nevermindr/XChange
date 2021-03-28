@@ -1,7 +1,5 @@
 package org.sergk.xchangestream.deribit;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
@@ -12,14 +10,9 @@ import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
-import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.sergk.xchangestream.deribit.dto.DeribitSubscriptionName;
-import org.sergk.xchangestream.deribit.dto.DeribitSubscriptionNotification;
-import org.sergk.xchangestream.deribit.dto.DeribitWholeOrderBookSubscriptionNotificationData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static info.bitrich.xchangestream.service.netty.StreamingObjectMapperHelper.getObjectMapper;
 
 /**
  * @author sergi-ko
@@ -28,8 +21,6 @@ class DeribitStreamingMarketDataService implements StreamingMarketDataService {
 
     private static final Logger logger =
             LoggerFactory.getLogger(DeribitStreamingMarketDataService.class);
-
-    private final ObjectMapper mapper = StreamingObjectMapperHelper.getObjectMapper();
 
     private final DeribitStreamingService service;
 
@@ -44,23 +35,15 @@ class DeribitStreamingMarketDataService implements StreamingMarketDataService {
         return subscribe(channelName)
                 .filter(node -> node.has("method") && node.get("method").asText().equals("subscription"))
                 .filter(node -> node.has("params") && node.get("params").get("channel").asText().equals(channelName))
-                .map(node -> {
-                    DeribitSubscriptionNotification<DeribitWholeOrderBookSubscriptionNotificationData> msgObj =
-                            mapper.readValue(mapper.treeAsTokens(node), getDepthType());
-                    return DeribitStreamingAdapters.adaptOrderbookMessage(orderBook, currencyPair, msgObj.getData());
-                });
-//                .map(node -> {
-//                    return DeribitStreamingAdapters.adaptOrderbookMessage(orderBook, currencyPair, node);
-//                });
+                .map(node ->
+                        DeribitStreamingAdapters.adaptOrderbookMessage(
+                                orderBook,
+                                currencyPair,
+                                node.get("params").get("data")
+                        )
+                );
     }
 
-    private static JavaType getDepthType() {
-        return getObjectMapper()
-                .getTypeFactory()
-                .constructType(
-                        new TypeReference<DeribitSubscriptionNotification<DeribitWholeOrderBookSubscriptionNotificationData>>() {
-                        });
-    }
 
     @Override
     public Observable<Ticker> getTicker(CurrencyPair currencyPair, Object... args) {
@@ -68,7 +51,12 @@ class DeribitStreamingMarketDataService implements StreamingMarketDataService {
         return subscribe(channelName)
                 .filter(node -> node.has("method") && node.get("method").asText().equals("subscription"))
                 .filter(node -> node.has("params") && node.get("params").get("channel").asText().equals(channelName))
-                .map(arrayNode -> DeribitStreamingAdapters.adaptTickerMessage(currencyPair, arrayNode));
+                .map(node ->
+                        DeribitStreamingAdapters.adaptTickerMessage(
+                                currencyPair,
+                                node.get("params").get("data")
+                        )
+                );
     }
 
     @Override
@@ -77,7 +65,12 @@ class DeribitStreamingMarketDataService implements StreamingMarketDataService {
         return subscribe(channelName)
                 .filter(node -> node.has("method") && node.get("method").asText().equals("subscription"))
                 .filter(node -> node.has("params") && node.get("params").get("channel").asText().equals(channelName))
-                .flatMap(node -> Observable.fromIterable(DeribitStreamingAdapters.adaptTrades(currencyPair, node)));
+                .flatMap(node ->
+                        Observable.fromIterable(DeribitStreamingAdapters.adaptTrades(
+                                currencyPair,
+                                node.get("params").get("data"))
+                        )
+                );
     }
 
     public Observable<JsonNode> subscribe(String channelName) {

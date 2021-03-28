@@ -8,12 +8,9 @@ import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.instrument.Instrument;
-import org.knowm.xchange.utils.DateUtils;
-import org.sergk.xchangestream.deribit.dto.DeribitWholeOrderBookSubscriptionNotificationData;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,66 +18,16 @@ import java.util.stream.Collectors;
  * @author sergi-ko
  */
 public class DeribitStreamingAdapters {
-
-    public static final String ENTRY_NEW = "new";
-
     public static final String NOTIFICATION_TYPE_SNAPSHOT = "snapshot";
     public static final String NOTIFICATION_TYPE_CHANGE = "change";
 
-    public static OrderBook adaptOrderbookMessage(
-            OrderBook orderBook,
-            Instrument instrument,
-            DeribitWholeOrderBookSubscriptionNotificationData msgObj) {
-        String notificationType = msgObj.getType().name();
-        Long timestamp = msgObj.getTimestamp();
-
-        List<List<Object>> arrayNodeBids = msgObj.getBids();
-        List<List<Object>> arrayNodeAsks = msgObj.getAsks();
-
-//        if (NOTIFICATION_TYPE_SNAPSHOT.equals(notificationType)) {
-//            orderBook = new OrderBook(
-//                    new Date(timestamp),
-//                    Streams.stream(arrayNodeAsks)
-//                            .filter(node -> node.get(0).toString().equals(ENTRY_NEW))
-//                            .map(node -> createLimitOrder(instrument, timestamp, node, Order.OrderType.ASK)
-//                            ),
-//                    Streams.stream(arrayNodeBids)
-//                            .filter(node -> node.get(0).toString().equals(ENTRY_NEW))
-//                            .map(node -> createLimitOrder(instrument, timestamp, node, Order.OrderType.BID)
-//                            ),
-//                    true
-//            );
-//        }
-        if (NOTIFICATION_TYPE_CHANGE.equals(notificationType) || NOTIFICATION_TYPE_SNAPSHOT.equals(notificationType)) {
-            arrayNodeAsks.stream()
-                    .map(node -> createLimitOrder(instrument, timestamp, node, Order.OrderType.ASK))
-                    .forEach(orderBook::update);
-
-            arrayNodeBids.stream()
-                    .map(node -> createLimitOrder(instrument, timestamp, node, Order.OrderType.BID))
-                    .forEach(orderBook::update);
-        }
-
-        return orderBook;
-    }
-
-    private static LimitOrder createLimitOrder(Instrument instrument, long timestamp, List<Object> node, Order.OrderType bid) {
-        return new LimitOrder(
-                bid,
-                new BigDecimal(node.get(2).toString()).stripTrailingZeros(),
-                instrument,
-                null,
-                new Date(timestamp),
-                new BigDecimal(node.get(1).toString()).stripTrailingZeros());
-    }
-
     @SuppressWarnings("UnstableApiUsage")
-    public static OrderBook adaptOrderbookMessage(OrderBook orderBook, Instrument instrument, JsonNode jsonMessage) {
-        String notificationType = jsonMessage.get("params").get("data").get("type").textValue();
-        long timestamp = jsonMessage.get("params").get("data").get("timestamp").asLong();
+    public static OrderBook adaptOrderbookMessage(OrderBook orderBook, Instrument instrument, JsonNode dataNode) {
+        String notificationType = dataNode.get("type").textValue();
+        long timestamp = dataNode.get("timestamp").asLong();
 
-        JsonNode arrayNodeBids = jsonMessage.get("params").get("data").get("bids");
-        JsonNode arrayNodeAsks = jsonMessage.get("params").get("data").get("asks");
+        JsonNode arrayNodeBids = dataNode.get("bids");
+        JsonNode arrayNodeAsks = dataNode.get("asks");
 
         if (NOTIFICATION_TYPE_CHANGE.equals(notificationType) || NOTIFICATION_TYPE_SNAPSHOT.equals(notificationType)) {
             Streams.stream(arrayNodeAsks.elements())
@@ -91,7 +38,6 @@ public class DeribitStreamingAdapters {
                     .map(node -> createLimitOrder(instrument, timestamp, node, Order.OrderType.BID))
                     .forEach(orderBook::update);
         }
-
         return orderBook;
     }
 
@@ -117,9 +63,8 @@ public class DeribitStreamingAdapters {
      * Adapt an JsonNode into a list of Trade
      */
     @SuppressWarnings("UnstableApiUsage")
-    public static List<Trade> adaptTrades(Instrument instrument, JsonNode arrayNode) {
-        JsonNode data = arrayNode.get("params").get("data");
-        return Streams.stream(data.elements())
+    public static List<Trade> adaptTrades(Instrument instrument, JsonNode dataArrayNode) {
+        return Streams.stream(dataArrayNode.elements())
                 .map(innerNode -> DeribitStreamingAdapters.adaptTrade(instrument, innerNode))
                 .collect(Collectors.toList());
     }
@@ -131,11 +76,10 @@ public class DeribitStreamingAdapters {
         if (arrayNode == null) {
             return null;
         }
-        Iterator<JsonNode> iterator = arrayNode.iterator();
         return new Trade.Builder()
-                .price(new BigDecimal(arrayNode.get("price").asText()))
-                .originalAmount(new BigDecimal(arrayNode.get("amount").asText()))
-                .timestamp(new Date(arrayNode.get("timestamp").asLong()))
+                .price(getNodeAsBigDecimal(arrayNode, "price"))
+                .originalAmount(getNodeAsBigDecimal(arrayNode, "amount"))
+                .timestamp(getNodeAsTimestamp(arrayNode.get("timestamp").asLong()))
                 .type(arrayNode.get("amount").asText().equals("buy") ? Order.OrderType.BID : Order.OrderType.ASK)
                 .instrument(instrument)
                 .id(arrayNode.get("trade_id").asText())
@@ -145,24 +89,30 @@ public class DeribitStreamingAdapters {
     /**
      * Adapt an ArrayNode containing a ticker message into a Ticker
      */
-    public static Ticker adaptTickerMessage(Instrument instrument, JsonNode arrayNode) {
-        JsonNode tickerNode = arrayNode.get("params").get("data");
-
+    public static Ticker adaptTickerMessage(Instrument instrument, JsonNode dataNode) {
         return new Ticker.Builder()
-                .open(new BigDecimal(tickerNode.get("open_interest").asText()))
-                .ask(new BigDecimal(tickerNode.get("best_ask_price").asText()))
-                .askSize(new BigDecimal(tickerNode.get("best_ask_amount").asText()))
-                .bid(new BigDecimal(tickerNode.get("best_bid_price").asText()))
-                .bidSize(new BigDecimal(tickerNode.get("best_bid_amount").asText()))
-                .last(new BigDecimal(tickerNode.get("last_price").asText()))
-                .high(new BigDecimal(tickerNode.get("stats").get("high").asText()))
-                .low(new BigDecimal(tickerNode.get("stats").get("low").asText()))
+                .open(getNodeAsBigDecimal(dataNode, "open_interest"))
+                .ask(getNodeAsBigDecimal(dataNode, "best_ask_price"))
+                .askSize(getNodeAsBigDecimal(dataNode, "best_ask_amount"))
+                .bid(getNodeAsBigDecimal(dataNode, "best_bid_price"))
+                .bidSize(getNodeAsBigDecimal(dataNode, "best_bid_amount"))
+                .last(getNodeAsBigDecimal(dataNode, "last_price"))
+                .high(getNodeAsBigDecimal(dataNode.get("stats"), "high"))
+                .low(getNodeAsBigDecimal(dataNode.get("stats"), "low"))
 //                            .vwap(nextNodeAsDecimal(vwapIterator))
-                .volume(new BigDecimal(tickerNode.get("stats").get("volume").asText()))
-                .quoteVolume(new BigDecimal(tickerNode.get("stats").get("volume_usd").asText()))
-                .percentageChange(new BigDecimal(tickerNode.get("stats").get("price_change").asText()))
-                .timestamp(new Date(tickerNode.get("timestamp").asLong()))
+                .volume(getNodeAsBigDecimal(dataNode.get("stats"), "volume"))
+                .quoteVolume(getNodeAsBigDecimal(dataNode.get("stats"), "volume_usd"))
+                .percentageChange(getNodeAsBigDecimal(dataNode.get("stats"), "price_change"))
+                .timestamp(getNodeAsTimestamp(dataNode.get("timestamp").asLong()))
                 .instrument(instrument)
                 .build();
+    }
+
+    private static BigDecimal getNodeAsBigDecimal(JsonNode arrayNode, String price) {
+        return new BigDecimal(arrayNode.get(price).asText());
+    }
+
+    private static Date getNodeAsTimestamp(long timestamp) {
+        return new Date(timestamp);
     }
 }

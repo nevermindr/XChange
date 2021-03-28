@@ -1,9 +1,6 @@
 package org.sergk.xchangestream.deribit.dto;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import info.bitrich.xchangestream.service.netty.StreamingObjectMapperHelper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -22,24 +19,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import static info.bitrich.xchangestream.service.netty.StreamingObjectMapperHelper.getObjectMapper;
-
 /**
  * @author sergi-ko
  */
 public class DeribitStreamingAdaptersTest {
 
     private static final CurrencyPair BTC_USD = new CurrencyPair(Currency.BTC, Currency.USD);
-
-    private final ObjectMapper mapper = StreamingObjectMapperHelper.getObjectMapper();
-
-    private static JavaType getDepthType() {
-        return getObjectMapper()
-                .getTypeFactory()
-                .constructType(
-                        new TypeReference<DeribitSubscriptionNotification<DeribitWholeOrderBookSubscriptionNotificationData>>() {
-                        });
-    }
 
     @Test
     public void testJsonNodeAdaptOrderbookMessageWithSnapshotAndUpdate() throws IOException {
@@ -49,129 +34,61 @@ public class DeribitStreamingAdaptersTest {
 
         OrderBook beforeUpdate = new OrderBook(null, new ArrayList<>(), new ArrayList<>());
         Assert.assertNotNull(jsonNode);
-        OrderBook afterInitialLoad = DeribitStreamingAdapters.adaptOrderbookMessage(beforeUpdate, BTC_USD, jsonNode);
+        OrderBook afterInitialLoad = DeribitStreamingAdapters.adaptOrderbookMessage(beforeUpdate, BTC_USD, jsonNode.get("params").get("data"));
 
         Date initialDate = new Date(Long.parseLong("1616841026613"));
-        Assert.assertEquals(afterInitialLoad.getTimeStamp(), initialDate);
+        Assert.assertEquals(initialDate, afterInitialLoad.getTimeStamp());
 
-        Assert.assertEquals(afterInitialLoad.getAsks().size(), 551);
-        Assert.assertEquals(afterInitialLoad.getBids().size(), 775);
+        Assert.assertEquals(551, afterInitialLoad.getAsks().size());
+        Assert.assertEquals(775, afterInitialLoad.getBids().size());
 
         BigDecimal firstAskLimitPrice = afterInitialLoad.getAsks().get(0).getLimitPrice();
         BigDecimal firstAskLimitPriceShould = new BigDecimal("1694.35");
-        Assert.assertEquals(firstAskLimitPrice, firstAskLimitPriceShould);
-        Assert.assertEquals(afterInitialLoad.getAsks().get(0).getOriginalAmount(), new BigDecimal(226517));
+        Assert.assertEquals(firstAskLimitPriceShould, firstAskLimitPrice);
+        Assert.assertEquals(new BigDecimal(226517), afterInitialLoad.getAsks().get(0).getOriginalAmount());
 
-        Assert.assertEquals(afterInitialLoad.getBids().get(0).getLimitPrice(), new BigDecimal("1694.2"));
-        Assert.assertEquals(afterInitialLoad.getBids().get(0).getOriginalAmount(), new BigDecimal(47));
+        Assert.assertEquals(new BigDecimal("1694.2"), afterInitialLoad.getBids().get(0).getLimitPrice());
+        Assert.assertEquals(new BigDecimal(47), afterInitialLoad.getBids().get(0).getOriginalAmount());
 
 
         LimitOrder lastAskLimitOrder = afterInitialLoad.getAsks().get(afterInitialLoad.getAsks().size() - 1);
-        Assert.assertEquals(lastAskLimitOrder.getLimitPrice().compareTo(new BigDecimal("5000")), 0);
-        Assert.assertEquals(lastAskLimitOrder.getOriginalAmount().compareTo(new BigDecimal(6434)), 0);
+        Assert.assertEquals(0, lastAskLimitOrder.getLimitPrice().compareTo(new BigDecimal("5000")));
+        Assert.assertEquals(0, lastAskLimitOrder.getOriginalAmount().compareTo(new BigDecimal(6434)));
 
         LimitOrder lastBidLimitOrder = afterInitialLoad.getBids().get(afterInitialLoad.getBids().size() - 1);
-        Assert.assertEquals(lastBidLimitOrder.getLimitPrice().compareTo(new BigDecimal("152")), 0);
-        Assert.assertEquals(lastBidLimitOrder.getOriginalAmount().compareTo(new BigDecimal(40)), 0);
+        Assert.assertEquals(0, lastBidLimitOrder.getLimitPrice().compareTo(new BigDecimal("152")));
+        Assert.assertEquals(0, lastBidLimitOrder.getOriginalAmount().compareTo(new BigDecimal(40)));
 
 
         JsonNode jsonNodeUpdate =
                 StreamingObjectMapperHelper.getObjectMapper()
                         .readTree(this.getClass().getResource("/subscription-book.ETH-PERPETUAL.100ms-change.json").openStream());
 
-        OrderBook afterUpdate = DeribitStreamingAdapters.adaptOrderbookMessage(afterInitialLoad, BTC_USD, jsonNodeUpdate);
+        OrderBook afterUpdate = DeribitStreamingAdapters.adaptOrderbookMessage(afterInitialLoad, BTC_USD, jsonNodeUpdate.get("params").get("data"));
 
         Date afterUpdateDate = new Date(Long.parseLong("1616841026914"));
-        Assert.assertEquals(afterUpdate.getTimeStamp(), afterUpdateDate);
+        Assert.assertEquals(afterUpdateDate, afterUpdate.getTimeStamp());
 
         firstAskLimitPrice = afterUpdate.getAsks().get(0).getLimitPrice();
         firstAskLimitPriceShould = new BigDecimal("1694.35");
-        Assert.assertEquals(firstAskLimitPrice, firstAskLimitPriceShould);
-        Assert.assertEquals(afterUpdate.getAsks().get(0).getOriginalAmount(), new BigDecimal(208997));
+        Assert.assertEquals(firstAskLimitPriceShould, firstAskLimitPrice);
+        Assert.assertEquals(new BigDecimal(208997), afterUpdate.getAsks().get(0).getOriginalAmount());
 
-        Assert.assertEquals(afterUpdate.getBids().get(0).getLimitPrice(), new BigDecimal("1694.2"));
-        Assert.assertEquals(afterUpdate.getBids().get(0).getOriginalAmount(), new BigDecimal(47));
-
-
-        lastAskLimitOrder = afterUpdate.getAsks().get(afterUpdate.getAsks().size() - 1);
-        Assert.assertEquals(lastAskLimitOrder.getLimitPrice().compareTo(new BigDecimal("5000")), 0);
-        Assert.assertEquals(lastAskLimitOrder.getOriginalAmount().compareTo(new BigDecimal(6434)), 0);
-
-        lastBidLimitOrder = afterUpdate.getBids().get(afterUpdate.getBids().size() - 1);
-        Assert.assertEquals(lastBidLimitOrder.getLimitPrice().compareTo(new BigDecimal("152")), 0);
-        Assert.assertEquals(lastBidLimitOrder.getOriginalAmount().compareTo(new BigDecimal(40)), 0);
-
-        Assert.assertEquals(afterInitialLoad.getAsks().size(), 549);
-        Assert.assertEquals(afterInitialLoad.getBids().size(), 775);
-
-    }
-
-    @Test
-    public void testNotificationObjectAdaptOrderbookMessageWithSnapshotAndUpdate() throws IOException {
-        JsonNode jsonNodeSnapshot =
-                StreamingObjectMapperHelper.getObjectMapper()
-                        .readTree(this.getClass().getResource("/subscription-book.ETH-PERPETUAL.100ms-snapshot.json").openStream());
-
-        DeribitSubscriptionNotification<DeribitWholeOrderBookSubscriptionNotificationData> msgObj = mapper.readValue(mapper.treeAsTokens(jsonNodeSnapshot), getDepthType());
-
-        OrderBook beforeUpdate = new OrderBook(null, new ArrayList<>(), new ArrayList<>());
-        Assert.assertNotNull(jsonNodeSnapshot);
-        OrderBook afterInitialLoad = DeribitStreamingAdapters.adaptOrderbookMessage(beforeUpdate, BTC_USD, msgObj.getData());
-
-        Date initialDate = new Date(Long.parseLong("1616841026613"));
-        Assert.assertEquals(afterInitialLoad.getTimeStamp(), initialDate);
-
-        Assert.assertEquals(afterInitialLoad.getAsks().size(), 551);
-        Assert.assertEquals(afterInitialLoad.getBids().size(), 775);
-
-        BigDecimal firstAskLimitPrice = afterInitialLoad.getAsks().get(0).getLimitPrice();
-        BigDecimal firstAskLimitPriceShould = new BigDecimal("1694.35");
-        Assert.assertEquals(firstAskLimitPrice, firstAskLimitPriceShould);
-        Assert.assertEquals(afterInitialLoad.getAsks().get(0).getOriginalAmount(), new BigDecimal(226517));
-
-        Assert.assertEquals(afterInitialLoad.getBids().get(0).getLimitPrice(), new BigDecimal("1694.2"));
-        Assert.assertEquals(afterInitialLoad.getBids().get(0).getOriginalAmount(), new BigDecimal(47));
-
-
-        LimitOrder lastAskLimitOrder = afterInitialLoad.getAsks().get(afterInitialLoad.getAsks().size() - 1);
-        Assert.assertEquals(lastAskLimitOrder.getLimitPrice().compareTo(new BigDecimal("5000")), 0);
-        Assert.assertEquals(lastAskLimitOrder.getOriginalAmount().compareTo(new BigDecimal(6434)), 0);
-
-        LimitOrder lastBidLimitOrder = afterInitialLoad.getBids().get(afterInitialLoad.getBids().size() - 1);
-        Assert.assertEquals(lastBidLimitOrder.getLimitPrice().compareTo(new BigDecimal("152")), 0);
-        Assert.assertEquals(lastBidLimitOrder.getOriginalAmount().compareTo(new BigDecimal(40)), 0);
-
-
-        JsonNode jsonNodeUpdate =
-                StreamingObjectMapperHelper.getObjectMapper()
-                        .readTree(this.getClass().getResource("/subscription-book.ETH-PERPETUAL.100ms-change.json").openStream());
-
-        DeribitSubscriptionNotification<DeribitWholeOrderBookSubscriptionNotificationData> msgObjUpdate = mapper.readValue(mapper.treeAsTokens(jsonNodeUpdate), getDepthType());
-
-        OrderBook afterUpdate = DeribitStreamingAdapters.adaptOrderbookMessage(afterInitialLoad, BTC_USD, msgObjUpdate.getData());
-
-        Date afterUpdateDate = new Date(Long.parseLong("1616841026914"));
-        Assert.assertEquals(afterUpdate.getTimeStamp(), afterUpdateDate);
-
-        firstAskLimitPrice = afterUpdate.getAsks().get(0).getLimitPrice();
-        firstAskLimitPriceShould = new BigDecimal("1694.35");
-        Assert.assertEquals(firstAskLimitPrice, firstAskLimitPriceShould);
-        Assert.assertEquals(afterUpdate.getAsks().get(0).getOriginalAmount(), new BigDecimal(208997));
-
-        Assert.assertEquals(afterUpdate.getBids().get(0).getLimitPrice(), new BigDecimal("1694.2"));
-        Assert.assertEquals(afterUpdate.getBids().get(0).getOriginalAmount(), new BigDecimal(47));
+        Assert.assertEquals(new BigDecimal("1694.2"), afterUpdate.getBids().get(0).getLimitPrice());
+        Assert.assertEquals(new BigDecimal(47), afterUpdate.getBids().get(0).getOriginalAmount());
 
 
         lastAskLimitOrder = afterUpdate.getAsks().get(afterUpdate.getAsks().size() - 1);
-        Assert.assertEquals(lastAskLimitOrder.getLimitPrice().compareTo(new BigDecimal("5000")), 0);
-        Assert.assertEquals(lastAskLimitOrder.getOriginalAmount().compareTo(new BigDecimal(6434)), 0);
+        Assert.assertEquals(0, lastAskLimitOrder.getLimitPrice().compareTo(new BigDecimal("5000")));
+        Assert.assertEquals(0, lastAskLimitOrder.getOriginalAmount().compareTo(new BigDecimal(6434)));
 
         lastBidLimitOrder = afterUpdate.getBids().get(afterUpdate.getBids().size() - 1);
-        Assert.assertEquals(lastBidLimitOrder.getLimitPrice().compareTo(new BigDecimal("152")), 0);
-        Assert.assertEquals(lastBidLimitOrder.getOriginalAmount().compareTo(new BigDecimal(40)), 0);
+        Assert.assertEquals(0, lastBidLimitOrder.getLimitPrice().compareTo(new BigDecimal("152")));
+        Assert.assertEquals(0, lastBidLimitOrder.getOriginalAmount().compareTo(new BigDecimal(40)));
 
-        Assert.assertEquals(afterInitialLoad.getAsks().size(), 549);
-        Assert.assertEquals(afterInitialLoad.getBids().size(), 775);
+        Assert.assertEquals(549, afterInitialLoad.getAsks().size());
+        Assert.assertEquals(775, afterInitialLoad.getBids().size());
+
     }
 
     @Test
@@ -182,11 +99,11 @@ public class DeribitStreamingAdaptersTest {
 
         Trade trade = DeribitStreamingAdapters.adaptTrade(null, jsonNode);
 
-        Assert.assertEquals(trade.getId(), "ETH-53743624");
-        Assert.assertEquals(trade.getOriginalAmount(), new BigDecimal(1));
-        Assert.assertEquals(trade.getTimestamp(), new Date(Long.parseLong("1616957704958")));
-        Assert.assertEquals(trade.getType(), Order.OrderType.ASK);
-        Assert.assertEquals(trade.getPrice(), new BigDecimal("1675.6"));
+        Assert.assertEquals("ETH-53743624", trade.getId());
+        Assert.assertEquals(new BigDecimal(1), trade.getOriginalAmount());
+        Assert.assertEquals(new Date(Long.parseLong("1616957704958")), trade.getTimestamp());
+        Assert.assertEquals(Order.OrderType.ASK, trade.getType());
+        Assert.assertEquals(new BigDecimal("1675.6"), trade.getPrice());
         Assert.assertNull(trade.getInstrument());
     }
 
@@ -196,13 +113,13 @@ public class DeribitStreamingAdaptersTest {
                 StreamingObjectMapperHelper.getObjectMapper()
                         .readTree(this.getClass().getResource("/subscription-trades.ETH-PERPETUAL.100ms.json").openStream());
 
-        List<Trade> trades = DeribitStreamingAdapters.adaptTrades(BTC_USD, jsonNode);
+        List<Trade> trades = DeribitStreamingAdapters.adaptTrades(BTC_USD, jsonNode.get("params").get("data"));
 
-        Assert.assertEquals(trades.size(), 3);
+        Assert.assertEquals(3, trades.size());
 
-        Assert.assertEquals(trades.get(0).getId(), "ETH-53743624");
-        Assert.assertEquals(trades.get(1).getId(), "ETH-53743625");
-        Assert.assertEquals(trades.get(2).getId(), "ETH-53743626");
+        Assert.assertEquals("ETH-53743624", trades.get(0).getId());
+        Assert.assertEquals("ETH-53743625", trades.get(1).getId());
+        Assert.assertEquals("ETH-53743626", trades.get(2).getId());
     }
 
 
@@ -212,9 +129,9 @@ public class DeribitStreamingAdaptersTest {
                 StreamingObjectMapperHelper.getObjectMapper()
                         .readTree(this.getClass().getResource("/subscription-ticker.ETH-PERPETUAL.100ms.json").openStream());
 
-        Ticker ticker = DeribitStreamingAdapters.adaptTickerMessage(BTC_USD, jsonNode);
+        Ticker ticker = DeribitStreamingAdapters.adaptTickerMessage(BTC_USD, jsonNode.get("params").get("data"));
 
-        Assert.assertEquals(ticker.getInstrument(), BTC_USD);
+        Assert.assertEquals(BTC_USD, ticker.getInstrument());
         Assert.assertEquals(new BigDecimal(141057220), ticker.getOpen());
         Assert.assertEquals(new BigDecimal("1670.3"), ticker.getAsk());
         Assert.assertEquals(new BigDecimal("534"), ticker.getAskSize());
