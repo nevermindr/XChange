@@ -1,12 +1,11 @@
 package org.sergk.xchangestream.deribit;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
-import info.bitrich.xchangestream.service.netty.StreamingObjectMapperHelper;
 import io.reactivex.Observable;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.derivative.FuturesContract;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
@@ -30,7 +29,8 @@ class DeribitStreamingMarketDataService implements StreamingMarketDataService {
 
     @Override
     public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
-        String channelName = String.format("%s.ETH-PERPETUAL.100ms", DeribitSubscriptionName.book);
+        FuturesContract contract = (FuturesContract) args[0];
+        String channelName = getChannelName(contract, DeribitSubscriptionName.book);
         OrderBook orderBook = new OrderBook(null, Lists.newArrayList(), Lists.newArrayList());
         return subscribe(channelName)
                 .filter(node -> node.has("method") && node.get("method").asText().equals("subscription"))
@@ -44,10 +44,19 @@ class DeribitStreamingMarketDataService implements StreamingMarketDataService {
                 );
     }
 
+    //format: <subscription_name>.<instrument>.<interval>
+    private String getChannelName(FuturesContract contract, DeribitSubscriptionName subscriptionName) {
+        return String.format("%s.%s-%s.100ms",
+                subscriptionName,
+                contract.getCurrencyPair().base,
+                contract.getExpireDate() == null ? "PERPETUAL" : contract.getExpireDate()
+                );
+    }
 
     @Override
     public Observable<Ticker> getTicker(CurrencyPair currencyPair, Object... args) {
-        String channelName = String.format("%s.ETH-PERPETUAL.100ms", DeribitSubscriptionName.ticker);
+        FuturesContract contract = (FuturesContract) args[0];
+        String channelName = getChannelName(contract, DeribitSubscriptionName.ticker);
         return subscribe(channelName)
                 .filter(node -> node.has("method") && node.get("method").asText().equals("subscription"))
                 .filter(node -> node.has("params") && node.get("params").get("channel").asText().equals(channelName))
@@ -61,7 +70,8 @@ class DeribitStreamingMarketDataService implements StreamingMarketDataService {
 
     @Override
     public Observable<Trade> getTrades(CurrencyPair currencyPair, Object... args) {
-        String channelName = String.format("%s.ETH-PERPETUAL.100ms", DeribitSubscriptionName.trades);
+        FuturesContract contract = (FuturesContract) args[0];
+        String channelName = getChannelName(contract, DeribitSubscriptionName.trades);
         return subscribe(channelName)
                 .filter(node -> node.has("method") && node.get("method").asText().equals("subscription"))
                 .filter(node -> node.has("params") && node.get("params").get("channel").asText().equals(channelName))

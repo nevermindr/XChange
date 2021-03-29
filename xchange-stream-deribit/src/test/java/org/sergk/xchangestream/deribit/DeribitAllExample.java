@@ -4,6 +4,7 @@ import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.derivative.FuturesContract;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,9 +23,12 @@ public class DeribitAllExample {
                 StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
         exchange.connect().blockingAwait();
 
+        String futureSymbol = String.format("%s/%s/%s", "ETH", "USD", "perpetual");
+        FuturesContract ETH_PERPETUAL = new FuturesContract(futureSymbol);
+
         exchange
                 .getStreamingMarketDataService()
-                .getOrderBook(CurrencyPair.BTC_USD)
+                .getOrderBook(CurrencyPair.ETH_USD, ETH_PERPETUAL)
                 .subscribe(
                         orderBook -> {
                             LOG.info("Order Book size: {} {}", orderBook.getAsks().size(), orderBook.getBids().size());
@@ -33,18 +37,16 @@ public class DeribitAllExample {
                         },
                         throwable -> LOG.error("ERROR in getting order book: ", throwable));
 
-
         exchange
                 .getStreamingMarketDataService()
-                .getTrades(CurrencyPair.BTC_USD)
+                .getTrades(CurrencyPair.ETH_USD, ETH_PERPETUAL)
                 .subscribe(
                         trade -> LOG.info("TRADE: {}", trade),
                         throwable -> LOG.error("ERROR in getting trades: ", throwable));
 
-
         exchange
                 .getStreamingMarketDataService()
-                .getTicker(CurrencyPair.BTC_USD)
+                .getTicker(CurrencyPair.ETH_USD, ETH_PERPETUAL)
                 .subscribe(
                         ticker -> LOG.info("Ticker: {}", ticker),
                         throwable -> LOG.error("ERROR in getting trades: ", throwable));

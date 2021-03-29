@@ -4,6 +4,7 @@ import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.derivative.FuturesContract;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,9 +23,12 @@ public class DeribitTradesExample {
                 StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
         exchange.connect().blockingAwait();
 
+        String futureSymbol = String.format("%s/%s/%s", "ETH", "USD", "perpetual");
+        FuturesContract ETH_PERPETUAL = new FuturesContract(futureSymbol);
+
         exchange
                 .getStreamingMarketDataService()
-                .getTrades(CurrencyPair.BTC_USD)
+                .getTrades(CurrencyPair.ETH_USD, ETH_PERPETUAL)
                 .subscribe(
                         trade -> LOG.info("TRADE: {}", trade),
                         throwable -> LOG.error("ERROR in getting trades: ", throwable));
